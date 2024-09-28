@@ -1,9 +1,6 @@
 const koffi = require("koffi");
 
-// Define NSString as a 'void*' type
-const NSString = koffi.typedef("void*", "NSString");
-
-// Load the Cocoa framework
+// Load macOS native APIs using koffi
 const Cocoa = koffi.load("/System/Library/Frameworks/AppKit.framework/AppKit");
 
 // Declare functions from the Cocoa framework
@@ -14,16 +11,21 @@ const NSPasteboardPasteboardItems = Cocoa.func(
   "void* NSPasteboard.pasteboardItems(void*)"
 );
 const NSPasteboardItemStringForType = Cocoa.func(
-  "void* NSPasteboardItem.stringForType(void*, void*)"
+  "void* NSPasteboardItem.stringForType(void*, const char*)"
 );
 
 // Text data type constant
-const NSStringPboardType = NSString; // Assuming NSStringPboardType is NSString; adjust this as necessary
+const NSStringPboardType = koffi.cstr("NSStringPboardType");
 
 // Function to get the dragged text
 function getDraggedText() {
   // Get NSPasteboard instance
   const pasteboard = NSPasteboardGeneralPasteboard();
+
+  if (!pasteboard) {
+    console.log("Failed to retrieve the pasteboard.");
+    return null;
+  }
 
   // Get items from the pasteboard
   const items = NSPasteboardPasteboardItems(pasteboard);
@@ -37,7 +39,7 @@ function getDraggedText() {
   const draggedText = NSPasteboardItemStringForType(items, NSStringPboardType);
 
   if (draggedText) {
-    const text = koffi.readCString(draggedText, 0);
+    const text = koffi.cstr(draggedText);
     console.log("Dragged Text:", text);
     return text;
   }
